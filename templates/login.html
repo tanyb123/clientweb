@@ -16,9 +16,9 @@
         <div class="card" style="max-width: 400px; margin: 50px auto;">
             <h2 style="text-align: center; margin-bottom: 30px;">Login</h2>
             
-            <div id="errorMessage" style="display: none;" class="error" style="margin-bottom: 20px;"></div>
+            <div id="errorMessage" style="display: none; margin-bottom: 20px; padding: 12px; border-left: 4px solid #e74c3c; background: #fff5f5; color: #c0392b; border-radius: 4px;" class="error"></div>
             
-            <form method="POST" action="/login">
+            <form method="POST" action="/login" id="loginForm">
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" name="username" required 
@@ -46,6 +46,15 @@
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = decodeURIComponent(error);
             errorDiv.style.display = 'block';
+            
+            // Clear error from URL to prevent showing on refresh
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+        
+        // Prevent form resubmission on page refresh
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
         }
     </script>
 </body>

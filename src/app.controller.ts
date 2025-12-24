@@ -144,13 +144,21 @@ export class AppController {
       } else {
         // Redirect back to login with error message
         console.log('❌ [LOGIN POST] Login failed, redirecting to /login with error');
-        res.redirect('/login?error=' + encodeURIComponent('Invalid username or password'));
+        const errorMsg = encodeURIComponent('Invalid username or password');
+        res.status(302);
+        res.setHeader('Location', '/login?error=' + errorMsg);
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.end();
         return;
       }
     } catch (error: any) {
       console.error('❌ [LOGIN POST] Login error:', error);
       console.error('❌ [LOGIN POST] Error stack:', error.stack);
-      res.redirect('/login?error=' + encodeURIComponent('Login failed: ' + (error.message || 'Unknown error')));
+      const errorMsg = encodeURIComponent('Login failed: ' + (error.message || 'Unknown error'));
+      res.status(302);
+      res.setHeader('Location', '/login?error=' + errorMsg);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.end();
       return;
     }
   }
