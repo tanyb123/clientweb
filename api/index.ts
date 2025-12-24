@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from '../src/app.module';
 import express, { Request, Response } from 'express';
 import session from 'express-session';
@@ -37,17 +38,14 @@ async function createApp(): Promise<express.Express> {
     } as any),
   );
 
-  // Serve static files FIRST - before any other middleware
-  expressApp.use('/static', express.static(join(process.cwd(), 'static'), {
-    maxAge: '1y',
-    immutable: true
-  }));
-
   // Parse form data and JSON
   expressApp.use(express.urlencoded({ extended: true }));
   expressApp.use(express.json());
 
-  const app = await NestFactory.create(
+  // Serve static files BEFORE NestJS app creation
+  expressApp.use('/static', express.static(join(process.cwd(), 'static')));
+
+  const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
     new ExpressAdapter(expressApp),
   );

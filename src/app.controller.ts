@@ -74,33 +74,25 @@ export class AppController {
     const username = req.body.username;
     const password = req.body.password;
     
-    try {
-      // VULNERABLE: SQL injection - query database with direct string interpolation
-      const authenticated = await this.databaseService.authenticateUser(username, password);
-      
-      if (authenticated) {
-        // Set session - ensure session is initialized
-        if (!req.session) {
-          // Initialize session if not exists
-          (req as any).session = {};
-        }
+    // VULNERABLE: SQL injection - query database with direct string interpolation
+    const authenticated = await this.databaseService.authenticateUser(username, password);
+    
+    if (authenticated) {
+      // Set session - must save explicitly on serverless
+      if (req.session) {
         (req.session as any).authenticated = true;
         (req.session as any).username = username;
-        
         // Save session before redirect
-        return new Promise<void>((resolve) => {
+        await new Promise<void>((resolve) => {
           req.session?.save(() => {
-            res.redirect('/students');
             resolve();
           });
         });
-      } else {
-        // Redirect back to login with error message
-        return res.redirect('/login?error=' + encodeURIComponent('Invalid username or password'));
       }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      return res.redirect('/login?error=' + encodeURIComponent('Login failed: ' + error.message));
+      return res.redirect('/students');
+    } else {
+      // Redirect back to login with error message
+      return res.redirect('/login?error=' + encodeURIComponent('Invalid username or password'));
     }
   }
 
