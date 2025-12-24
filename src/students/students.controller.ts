@@ -10,11 +10,11 @@ export class StudentsController {
 
   @Get()
   async getStudents(@Query('search') search: string, @Res() res: Response, @Req() req: Request) {
-    // NOTE: Authentication check disabled for WAF testing
-    // Session may not persist properly on Vercel serverless
-    // if (!req.session || !(req.session as any).authenticated) {
-    //   return res.redirect('/login');
-    // }
+    // Check authentication via cookie (works on serverless)
+    const isAuthenticated = req.cookies?.authenticated === 'true';
+    if (!isAuthenticated) {
+      return res.redirect('/login');
+    }
     
     const students = await this.studentsService.searchStudents(search || '');
     const stats = await this.studentsService.getStatistics();
@@ -52,11 +52,11 @@ export class StudentsController {
 
   @Post()
   async handleStudentAction(@Req() req: Request, @Res() res: Response) {
-    // NOTE: Authentication check disabled for WAF testing
-    // Session may not persist properly on Vercel serverless
-    // if (!req.session || !(req.session as any).authenticated) {
-    //   return res.redirect('/login');
-    // }
+    // Check authentication via cookie (works on serverless)
+    const isAuthenticated = req.cookies?.authenticated === 'true';
+    if (!isAuthenticated) {
+      return res.redirect('/login');
+    }
     
     const body = req.body;
     const action = body.action;

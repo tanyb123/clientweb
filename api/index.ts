@@ -46,6 +46,10 @@ async function createApp(): Promise<express.Express> {
     lastModified: true
   }));
 
+  // Parse cookies
+  const cookieParser = require('cookie-parser');
+  expressApp.use(cookieParser());
+
   // Parse form data and JSON
   expressApp.use(express.urlencoded({ extended: true }));
   expressApp.use(express.json());

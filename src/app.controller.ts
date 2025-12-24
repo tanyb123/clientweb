@@ -47,11 +47,11 @@ export class AppController {
 
   @Get()
   home(@Res() res: Response, @Req() req: Request) {
-    // NOTE: Authentication check disabled for WAF testing
-    // Session may not persist properly on Vercel serverless
-    // if (!req.session || !(req.session as any).authenticated) {
-    //   return res.redirect('/login');
-    // }
+    // Check authentication via cookie (works on serverless)
+    const isAuthenticated = req.cookies?.authenticated === 'true';
+    if (!isAuthenticated) {
+      return res.redirect('/login');
+    }
     
     const baseTemplate = readFileSync(join(process.cwd(), 'templates', 'base.html'), 'utf8');
     const pageTemplate = readFileSync(join(process.cwd(), 'templates', 'home.html'), 'utf8');
@@ -62,7 +62,8 @@ export class AppController {
   @Get('login')
   login(@Res() res: Response, @Req() req: Request) {
     // If already logged in, redirect to students
-    if (req.session && (req.session as any).authenticated) {
+    const isAuthenticated = req.cookies?.authenticated === 'true';
+    if (isAuthenticated) {
       return res.redirect('/students');
     }
     
@@ -79,17 +80,19 @@ export class AppController {
     const authenticated = await this.databaseService.authenticateUser(username, password);
     
     if (authenticated) {
-      // Set session - must save explicitly on serverless
-      if (req.session) {
-        (req.session as any).authenticated = true;
-        (req.session as any).username = username;
-        // Save session before redirect
-        await new Promise<void>((resolve) => {
-          req.session?.save(() => {
-            resolve();
-          });
-        });
-      }
+      // Set authentication cookie (works on serverless)
+      res.cookie('authenticated', 'true', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: 'lax',
+      });
+      res.cookie('username', username, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: 'lax',
+      });
       return res.redirect('/students');
     } else {
       // Redirect back to login with error message
@@ -99,9 +102,9 @@ export class AppController {
 
   @Get('logout')
   logout(@Res() res: Response, @Req() req: Request) {
-    if (req.session) {
-      req.session.destroy(() => {});
-    }
+    // Clear authentication cookies
+    res.clearCookie('authenticated');
+    res.clearCookie('username');
     res.redirect('/login');
   }
 }
