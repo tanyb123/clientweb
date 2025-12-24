@@ -41,12 +41,15 @@ async function createApp(): Promise<express.Express> {
   expressApp.use(express.urlencoded({ extended: true }));
   expressApp.use(express.json());
 
+  // Serve static files BEFORE NestJS app creation
+  expressApp.use('/static', express.static(join(process.cwd(), 'static')));
+
   const app = await NestFactory.create(
     AppModule,
     new ExpressAdapter(expressApp),
   );
 
-  // Serve static files
+  // Also serve via NestJS (backup)
   app.useStaticAssets(join(process.cwd(), 'static'), {
     prefix: '/static/',
   });
