@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>SQL Injection Test</h2>
+    <form method="POST" action="/sql">
+        <div class="form-group">
+            <label>Username:</label>
+            <input type="text" name="username" placeholder="Enter username">
+        </div>
+        <div class="form-group">
+            <label>Password:</label>
+            <input type="password" name="password" placeholder="Enter password">
+        </div>
+        <button type="submit">Login</button>
+    </form>
+    
+    <form method="GET" action="/sql" style="margin-top: 20px;">
+        <div class="form-group">
+            <label>Search User:</label>
+            <input type="text" name="search" placeholder="Search by username or email">
+        </div>
+        <button type="submit">Search</button>
+    </form>
+    
+    {% if result %}
+    <div class="result {{ result_type }}">
+        <pre>{{ result }}</pre>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

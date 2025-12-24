@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>File Operations Test</h2>
+    <form method="GET" action="/file">
+        <div class="form-group">
+            <label>Read File:</label>
+            <input type="text" name="file" placeholder="Enter file path (e.g., /etc/passwd)">
+        </div>
+        <button type="submit">Read File</button>
+    </form>
+    
+    {% if result %}
+    <div class="result {{ result_type }}">
+        <pre>{{ result }}</pre>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

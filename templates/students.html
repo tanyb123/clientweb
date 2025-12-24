@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Student Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="header-section">
+        <h2>Student Management System</h2>
+        <button class="btn-primary" onclick="openAddModal()">
+            Add New Student
+        </button>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-section">
+        <form method="GET" action="/students" class="search-form">
+            <input type="text" name="search" placeholder="Search by name, student ID, or email..." 
+                   value="{{ search_query or '' }}" class="search-input">
+            <button type="submit" class="btn-search">Search</button>
+            {% if search_query %}
+            <a href="/students" class="btn-clear">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon"></div>
+            <div class="stat-info">
+                <div class="stat-value">{{ total_students }}</div>
+                <div class="stat-label">Total Students</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"></div>
+            <div class="stat-info">
+                <div class="stat-value">{{ avg_gpa|round(2) if avg_gpa else '0.00' }}</div>
+                <div class="stat-label">Average GPA</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Table -->
+    <div class="table-container">
+        {% if students %}
+        <table class="students-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Student ID</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Class</th>
+                    <th>GPA</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td>{{ student[0] }}</td>
+                    <td><strong>{{ student[1] }}</strong></td>
+                    <td>{{ student[2] }}</td>
+                    <td>{{ student[3] }}</td>
+                    <td>{{ student[4] }}</td>
+                    <td><span class="badge">{{ student[5] }}</span></td>
+                    <td>
+                        <span class="gpa-badge gpa-{{ 'high' if student[6] >= 3.5 else 'medium' if student[6] >= 2.5 else 'low' }}">
+                            {{ "%.2f"|format(student[6]) }}
+                        </span>
+                    </td>
+                    <td class="actions">
+                        <button class="btn-edit" 
+                                data-student-id="{{ student[0] }}"
+                                data-student-code="{{ student[1] }}"
+                                data-student-name="{{ student[2] }}"
+                                data-student-email="{{ student[3] }}"
+                                data-student-phone="{{ student[4] }}"
+                                data-student-class="{{ student[5] }}"
+                                data-student-gpa="{{ student[6] }}">
+                            Edit
+                        </button>
+                        <button class="btn-delete" 
+                                data-student-id="{{ student[0] }}"
+                                data-student-name="{{ student[2] }}">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"></div>
+            <h3>No students found</h3>
+            <p>{% if search_query %}Try a different search term{% else %}Add your first student to get started{% endif %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div id="studentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Add New Student</h3>
+            <span class="close" onclick="closeModal()">&times;</span>
+        </div>
+        <form id="studentForm" method="POST" action="/students">
+            <input type="hidden" name="student_id" id="form_student_id" value="">
+            <input type="hidden" name="action" id="form_action" value="add">
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="student_code">Student ID *</label>
+                    <input type="text" id="student_code" name="student_code" required 
+                           placeholder="e.g., SV001">
+                </div>
+                <div class="form-group">
+                    <label for="full_name">Full Name *</label>
+                    <input type="text" id="full_name" name="full_name" required 
+                           placeholder="e.g., Nguyen Van A">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" required 
+                           placeholder="e.g., student@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="text" id="phone" name="phone" 
+                           placeholder="e.g., 0123456789">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="class_name">Class *</label>
+                    <input type="text" id="class_name" name="class_name" required 
+                           placeholder="e.g., IT2024">
+                </div>
+                <div class="form-group">
+                    <label for="gpa">GPA *</label>
+                    <input type="number" id="gpa" name="gpa" step="0.01" min="0" max="4" required 
+                           placeholder="e.g., 3.5">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-submit">Save Student</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content modal-small">
+        <div class="modal-header">
+            <h3>Confirm Delete</h3>
+            <span class="close" onclick="closeDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete student <strong id="deleteStudentName"></strong>?</p>
+            <p class="warning-text">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+            <form id="deleteForm" method="POST" action="/students" style="display: inline;">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="student_id" id="delete_student_id" value="">
+                <button type="submit" class="btn-delete-confirm">Delete</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if message %}
+<div class="alert alert-{{ message_type }}" id="alertMessage">
+    {{ message }}
+    <span class="alert-close" onclick="closeAlert()">&times;</span>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openAddModal() {
+    document.getElementById('studentModal').style.display = 'block';
+    document.getElementById('modalTitle').textContent = 'Add New Student';
+    document.getElementById('studentForm').reset();
+    document.getElementById('form_action').value = 'add';
+    document.getElementById('form_student_id').value = '';
+}
+
+function openEditModal(id, code, name, email, phone, className, gpa) {
+    document.getElementById('studentModal').style.display = 'block';
+    document.getElementById('modalTitle').textContent = 'Edit Student';
+    document.getElementById('form_action').value = 'edit';
+    document.getElementById('form_student_id').value = id;
+    document.getElementById('student_code').value = code || '';
+    document.getElementById('full_name').value = name || '';
+    document.getElementById('email').value = email || '';
+    document.getElementById('phone').value = phone || '';
+    document.getElementById('class_name').value = className || '';
+    document.getElementById('gpa').value = gpa || 0;
+}
+
+function closeModal() {
+    document.getElementById('studentModal').style.display = 'none';
+}
+
+function deleteStudent(id, name) {
+    document.getElementById('deleteModal').style.display = 'block';
+    document.getElementById('deleteStudentName').textContent = name;
+    document.getElementById('delete_student_id').value = id;
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+}
+
+function closeAlert() {
+    const alert = document.getElementById('alertMessage');
+    if (alert) {
+        alert.style.display = 'none';
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('studentModal');
+    const deleteModal = document.getElementById('deleteModal');
+    if (event.target == modal) {
+        closeModal();
+    }
+    if (event.target == deleteModal) {
+        closeDeleteModal();
+    }
+}
+
+// Auto-hide alert after 5 seconds
+setTimeout(function() {
+    const alert = document.getElementById('alertMessage');
+    if (alert) {
+        alert.style.opacity = '0';
+        setTimeout(function() {
+            alert.remove();
+        }, 300);
+    }
+}, 5000);
+
+// Event listeners for edit and delete buttons
+document.addEventListener('DOMContentLoaded', function() {
+    // Edit buttons
+    document.querySelectorAll('.btn-edit').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-student-id');
+            const code = this.getAttribute('data-student-code') || '';
+            const name = this.getAttribute('data-student-name') || '';
+            const email = this.getAttribute('data-student-email') || '';
+            const phone = this.getAttribute('data-student-phone') || '';
+            const className = this.getAttribute('data-student-class') || '';
+            const gpa = parseFloat(this.getAttribute('data-student-gpa') || '0');
+            openEditModal(id, code, name, email, phone, className, gpa);
+        });
+    });
+    
+    // Delete buttons
+    document.querySelectorAll('.btn-delete').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-student-id');
+            const name = this.getAttribute('data-student-name') || '';
+            deleteStudent(id, name);
+        });
+    });
+});
+</script>
+{% endblock %}
+

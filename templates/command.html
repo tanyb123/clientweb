@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Command Injection Test</h2>
+    <form method="POST" action="/command">
+        <div class="form-group">
+            <label>Ping Host:</label>
+            <input type="text" name="host" placeholder="Enter hostname or IP (e.g., google.com)">
+        </div>
+        <button type="submit">Ping</button>
+    </form>
+    
+    {% if result %}
+    <div class="result {{ result_type }}">
+        <pre>{{ result }}</pre>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
