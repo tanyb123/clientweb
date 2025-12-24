@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from '../src/app.module';
-import * as express from 'express';
-import * as session from 'express-session';
+import express, { Request, Response } from 'express';
+import session from 'express-session';
 import * as dotenv from 'dotenv';
 import { join } from 'path';
 
@@ -52,12 +52,12 @@ async function createApp(): Promise<express.Express> {
   return expressApp;
 }
 
-export default async function handler(req: express.Request, res: express.Response) {
+export default async function handler(req: Request, res: Response) {
   try {
     const app = await createApp();
     return app(req, res);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Handler error:', error);
-    res.status(500).json({ error: 'Internal server error', message: error.message });
+    res.status(500).json({ error: 'Internal server error', message: error?.message || 'Unknown error' });
   }
 }
