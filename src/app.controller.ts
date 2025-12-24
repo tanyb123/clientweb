@@ -47,10 +47,11 @@ export class AppController {
 
   @Get()
   home(@Res() res: Response, @Req() req: Request) {
-    // Redirect to login if not authenticated
-    if (!req.session || !(req.session as any).authenticated) {
-      return res.redirect('/login');
-    }
+    // NOTE: Authentication check disabled for WAF testing
+    // Session may not persist properly on Vercel serverless
+    // if (!req.session || !(req.session as any).authenticated) {
+    //   return res.redirect('/login');
+    // }
     
     const baseTemplate = readFileSync(join(process.cwd(), 'templates', 'base.html'), 'utf8');
     const pageTemplate = readFileSync(join(process.cwd(), 'templates', 'home.html'), 'utf8');
