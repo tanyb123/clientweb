@@ -37,12 +37,15 @@ async function createApp(): Promise<express.Express> {
     } as any),
   );
 
+  // Serve static files FIRST - before any other middleware
+  expressApp.use('/static', express.static(join(process.cwd(), 'static'), {
+    maxAge: '1y',
+    immutable: true
+  }));
+
   // Parse form data and JSON
   expressApp.use(express.urlencoded({ extended: true }));
   expressApp.use(express.json());
-
-  // Serve static files BEFORE NestJS app creation
-  expressApp.use('/static', express.static(join(process.cwd(), 'static')));
 
   const app = await NestFactory.create(
     AppModule,
