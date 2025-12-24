@@ -68,6 +68,12 @@ async function createApp(): Promise<express.Express> {
 
 export default async function handler(req: Request, res: Response) {
   try {
+    // Handle static files directly first
+    if (req.url?.startsWith('/static/')) {
+      const app = await createApp();
+      return app(req, res);
+    }
+    
     const app = await createApp();
     return app(req, res);
   } catch (error: any) {
