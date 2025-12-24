@@ -18,9 +18,13 @@ async function createApp(): Promise<express.Express> {
 
   const expressApp = express();
   
-  // Session configuration
+  // Session configuration - Use memory store for serverless
+  const MemoryStore = require('memorystore')(session);
   expressApp.use(
     session({
+      store: new MemoryStore({
+        checkPeriod: 86400000, // prune expired entries every 24h
+      }),
       secret: process.env.SESSION_SECRET || 'waf-test-secret-key-change-in-production',
       resave: false,
       saveUninitialized: false,
@@ -28,6 +32,7 @@ async function createApp(): Promise<express.Express> {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
+        sameSite: 'lax',
       },
     } as any),
   );
