@@ -98,11 +98,16 @@ export class DatabaseService implements OnModuleInit {
   // VULNERABLE: SQL injection - direct string interpolation
   async query(sql: string): Promise<any[]> {
     try {
+      if (!this.pool) {
+        console.error('❌ Database pool not initialized');
+        return [];
+      }
       // VULNERABLE: Direct SQL execution without parameterization
       const result: QueryResult = await this.pool.query(sql);
       return result.rows;
-    } catch (error) {
-      console.error('Query error:', error);
+    } catch (error: any) {
+      console.error('❌ Query error:', error.message || error);
+      console.error('❌ SQL:', sql);
       return [];
     }
   }
@@ -120,9 +125,22 @@ export class DatabaseService implements OnModuleInit {
 
   // VULNERABLE: SQL injection - authenticate user from database
   async authenticateUser(username: string, password: string): Promise<boolean> {
-    // VULNERABLE: SQL injection - direct string interpolation
-    const query = `SELECT * FROM users WHERE username='${username}' AND password='${password}'`;
-    const result = await this.query(query);
-    return result.length > 0;
+    try {
+      if (!this.pool) {
+        console.error('❌ Database pool not initialized - cannot authenticate');
+        return false;
+      }
+      
+      // VULNERABLE: SQL injection - direct string interpolation
+      // No input sanitization - intentionally vulnerable for WAF testing
+      const query = `SELECT * FROM users WHERE username='${username}' AND password='${password}'`;
+      console.log('🔓 VULNERABLE QUERY:', query); // Log for debugging
+      const result = await this.query(query);
+      console.log('🔓 QUERY RESULT:', result.length > 0 ? 'AUTHENTICATED' : 'FAILED', `(${result.length} rows)`);
+      return result.length > 0;
+    } catch (error: any) {
+      console.error('❌ Authentication error:', error.message || error);
+      return false;
+    }
   }
 }

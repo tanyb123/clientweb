@@ -29,6 +29,10 @@ async function bootstrap() {
     } as any),
   );
   
+  // Parse cookies - IMPORTANT for authentication
+  const cookieParser = require('cookie-parser');
+  app.use(cookieParser());
+  
   // Parse form data and JSON
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());

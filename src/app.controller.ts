@@ -45,10 +45,36 @@ export class AppController {
       .replace(/'/g, '&#039;');
   }
 
+  // Helper to get cookies - fallback to parsing from header if req.cookies is undefined
+  private getCookies(req: Request): any {
+    if (req.cookies) {
+      return req.cookies;
+    }
+    
+    // Fallback: parse from cookie header
+    const cookieHeader = req.headers.cookie;
+    if (!cookieHeader) {
+      return {};
+    }
+    
+    const cookies: any = {};
+    cookieHeader.split(';').forEach(cookie => {
+      const parts = cookie.trim().split('=');
+      if (parts.length === 2) {
+        const key = parts[0].trim();
+        const value = decodeURIComponent(parts[1].trim());
+        cookies[key] = value;
+      }
+    });
+    
+    return cookies;
+  }
+
   @Get()
   home(@Res() res: Response, @Req() req: Request) {
     // Check authentication via cookie (works on serverless)
-    const isAuthenticated = req.cookies?.authenticated === 'true';
+    const cookies = this.getCookies(req);
+    const isAuthenticated = cookies?.authenticated === 'true';
     if (!isAuthenticated) {
       return res.redirect('/login');
     }
@@ -62,7 +88,8 @@ export class AppController {
   @Get('login')
   login(@Res() res: Response, @Req() req: Request) {
     // If already logged in, redirect to students
-    const isAuthenticated = req.cookies?.authenticated === 'true';
+    const cookies = this.getCookies(req);
+    const isAuthenticated = cookies?.authenticated === 'true';
     if (isAuthenticated) {
       return res.redirect('/students');
     }
@@ -73,30 +100,58 @@ export class AppController {
 
   @Post('login')
   async loginPost(@Res() res: Response, @Req() req: Request) {
-    const username = req.body.username;
-    const password = req.body.password;
-    
-    // VULNERABLE: SQL injection - query database with direct string interpolation
-    const authenticated = await this.databaseService.authenticateUser(username, password);
-    
-    if (authenticated) {
-      // Set authentication cookie (works on serverless)
-      res.cookie('authenticated', 'true', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        sameSite: 'lax',
-      });
-      res.cookie('username', username, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000,
-        sameSite: 'lax',
-      });
-      return res.redirect('/students');
-    } else {
-      // Redirect back to login with error message
-      return res.redirect('/login?error=' + encodeURIComponent('Invalid username or password'));
+    try {
+      const username = req.body.username;
+      const password = req.body.password;
+      
+      console.log('🔐 [LOGIN POST] Login attempt:', { username, passwordLength: password?.length });
+      console.log('🔐 [LOGIN POST] Request URL:', req.url);
+      console.log('🔐 [LOGIN POST] Request method:', req.method);
+      console.log('🔐 [LOGIN POST] Request headers:', JSON.stringify(req.headers));
+      
+      // VULNERABLE: SQL injection - query database with direct string interpolation
+      const authenticated = await this.databaseService.authenticateUser(username, password);
+      
+      console.log('🔐 [LOGIN POST] Authentication result:', authenticated);
+      
+      if (authenticated) {
+        // Set authentication cookie (works on serverless)
+        // Use secure: false for Vercel compatibility (Vercel handles HTTPS)
+        const cookieOptions: any = {
+          httpOnly: true,
+          secure: false, // Vercel handles HTTPS, but we set to false for compatibility
+          maxAge: 24 * 60 * 60 * 1000, // 24 hours
+          sameSite: 'lax',
+          path: '/',
+        };
+        
+        console.log('🔐 [LOGIN POST] Setting cookies...');
+        res.cookie('authenticated', 'true', cookieOptions);
+        res.cookie('username', username, cookieOptions);
+        
+        console.log('✅ [LOGIN POST] Login successful, cookies set');
+        console.log('✅ [LOGIN POST] Cookie options:', JSON.stringify(cookieOptions));
+        console.log('🔄 [LOGIN POST] About to redirect to /students...');
+        
+        // Set redirect header and status
+        res.status(302);
+        res.setHeader('Location', '/students');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        console.log('✅ [LOGIN POST] Redirect headers set, sending response...');
+        res.end();
+        console.log('✅ [LOGIN POST] Response sent');
+        return;
+      } else {
+        // Redirect back to login with error message
+        console.log('❌ [LOGIN POST] Login failed, redirecting to /login with error');
+        res.redirect('/login?error=' + encodeURIComponent('Invalid username or password'));
+        return;
+      }
+    } catch (error: any) {
+      console.error('❌ [LOGIN POST] Login error:', error);
+      console.error('❌ [LOGIN POST] Error stack:', error.stack);
+      res.redirect('/login?error=' + encodeURIComponent('Login failed: ' + (error.message || 'Unknown error')));
+      return;
     }
   }
 

@@ -8,13 +8,52 @@ import { StudentsService } from './students.service';
 export class StudentsController {
   constructor(private readonly studentsService: StudentsService) {}
 
+  // Helper to get cookies - fallback to parsing from header if req.cookies is undefined
+  private getCookies(req: Request): any {
+    if (req.cookies) {
+      return req.cookies;
+    }
+    
+    // Fallback: parse from cookie header
+    const cookieHeader = req.headers.cookie;
+    if (!cookieHeader) {
+      return {};
+    }
+    
+    const cookies: any = {};
+    cookieHeader.split(';').forEach(cookie => {
+      const parts = cookie.trim().split('=');
+      if (parts.length === 2) {
+        const key = parts[0].trim();
+        const value = decodeURIComponent(parts[1].trim());
+        cookies[key] = value;
+      }
+    });
+    
+    return cookies;
+  }
+
   @Get()
   async getStudents(@Query('search') search: string, @Res() res: Response, @Req() req: Request) {
+    console.log('📚 [STUDENTS GET] Request received');
+    console.log('📚 [STUDENTS GET] Request URL:', req.url);
+    
+    const cookies = this.getCookies(req);
+    console.log('📚 [STUDENTS GET] Request cookies (parsed):', JSON.stringify(cookies));
+    console.log('📚 [STUDENTS GET] Request headers:', JSON.stringify(req.headers));
+    
     // Check authentication via cookie (works on serverless)
-    const isAuthenticated = req.cookies?.authenticated === 'true';
+    const isAuthenticated = cookies?.authenticated === 'true';
+    console.log('📚 [STUDENTS GET] Is authenticated:', isAuthenticated);
+    console.log('📚 [STUDENTS GET] Cookie value:', cookies?.authenticated);
+    
     if (!isAuthenticated) {
-      return res.redirect('/login');
+      console.log('❌ [STUDENTS GET] Not authenticated, redirecting to /login');
+      res.redirect('/login');
+      return;
     }
+    
+    console.log('✅ [STUDENTS GET] Authenticated, proceeding to load students...');
     
     const students = await this.studentsService.searchStudents(search || '');
     const stats = await this.studentsService.getStatistics();
@@ -53,7 +92,8 @@ export class StudentsController {
   @Post()
   async handleStudentAction(@Req() req: Request, @Res() res: Response) {
     // Check authentication via cookie (works on serverless)
-    const isAuthenticated = req.cookies?.authenticated === 'true';
+    const cookies = this.getCookies(req);
+    const isAuthenticated = cookies?.authenticated === 'true';
     if (!isAuthenticated) {
       return res.redirect('/login');
     }
