@@ -2,8 +2,12 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as express from 'express';
+import * as dotenv from 'dotenv';
 const session = require('express-session');
 import { AppModule } from './app.module';
+
+// Load environment variables
+dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -30,7 +34,7 @@ async function bootstrap() {
   app.use(express.json());
   
   // Serve static files
-  app.useStaticAssets(join(__dirname, '..', 'static'), {
+  app.useStaticAssets(join(process.cwd(), 'static'), {
     prefix: '/static/',
   });
   

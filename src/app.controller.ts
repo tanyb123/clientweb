@@ -52,8 +52,8 @@ export class AppController {
       return res.redirect('/login');
     }
     
-    const baseTemplate = readFileSync(join(__dirname, '..', 'templates', 'base.html'), 'utf8');
-    const pageTemplate = readFileSync(join(__dirname, '..', 'templates', 'home.html'), 'utf8');
+    const baseTemplate = readFileSync(join(process.cwd(), 'templates', 'base.html'), 'utf8');
+    const pageTemplate = readFileSync(join(process.cwd(), 'templates', 'home.html'), 'utf8');
     const finalTemplate = this.renderTemplate(pageTemplate, baseTemplate);
     res.send(finalTemplate);
   }
@@ -65,17 +65,17 @@ export class AppController {
       return res.redirect('/students');
     }
     
-    const loginTemplate = readFileSync(join(__dirname, '..', 'templates', 'login.html'), 'utf8');
+    const loginTemplate = readFileSync(join(process.cwd(), 'templates', 'login.html'), 'utf8');
     res.send(loginTemplate);
   }
 
   @Post('login')
-  loginPost(@Res() res: Response, @Req() req: Request) {
+  async loginPost(@Res() res: Response, @Req() req: Request) {
     const username = req.body.username;
     const password = req.body.password;
     
     // VULNERABLE: SQL injection - query database with direct string interpolation
-    const authenticated = this.databaseService.authenticateUser(username, password);
+    const authenticated = await this.databaseService.authenticateUser(username, password);
     
     if (authenticated) {
       // Set session

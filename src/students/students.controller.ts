@@ -15,14 +15,14 @@ export class StudentsController {
       return res.redirect('/login');
     }
     
-    const students = this.studentsService.searchStudents(search || '');
-    const stats = this.studentsService.getStatistics();
+    const students = await this.studentsService.searchStudents(search || '');
+    const stats = await this.studentsService.getStatistics();
     
     // Read base template
-    let baseTemplate = readFileSync(join(__dirname, '..', '..', 'templates', 'base.html'), 'utf8');
+    let baseTemplate = readFileSync(join(process.cwd(), 'templates', 'base.html'), 'utf8');
     
     // Read students content
-    let studentsTemplate = readFileSync(join(__dirname, '..', '..', 'templates', 'students.html'), 'utf8');
+    let studentsTemplate = readFileSync(join(process.cwd(), 'templates', 'students.html'), 'utf8');
     
     // Extract content from students template (between {% block content %} and {% endblock %})
     const contentMatch = studentsTemplate.match(/{%\s*block\s+content\s*%}([\s\S]*?){%\s*endblock\s*%}/);
@@ -63,17 +63,26 @@ export class StudentsController {
 
     try {
       if (action === 'add') {
-        this.studentsService.addStudent({
-          student_code: body.student_code,
-          full_name: body.full_name,
-          email: body.email,
-          phone: body.phone,
-          class_name: body.class_name,
-          gpa: parseFloat(body.gpa),
-        });
-        message = `Student ${body.full_name} added successfully!`;
+        try {
+          await this.studentsService.addStudent({
+            student_code: body.student_code,
+            full_name: body.full_name,
+            email: body.email,
+            phone: body.phone,
+            class_name: body.class_name,
+            gpa: parseFloat(body.gpa),
+          });
+          message = `Student ${body.full_name} added successfully!`;
+        } catch (addError: any) {
+          if (addError.message && (addError.message.includes('UNIQUE constraint') || addError.message.includes('duplicate key'))) {
+            message = `Error: Student code "${body.student_code}" already exists!`;
+            messageType = 'error';
+          } else {
+            throw addError;
+          }
+        }
       } else if (action === 'edit') {
-        this.studentsService.updateStudent(parseInt(body.student_id), {
+        await this.studentsService.updateStudent(parseInt(body.student_id), {
           student_code: body.student_code,
           full_name: body.full_name,
           email: body.email,
@@ -83,7 +92,7 @@ export class StudentsController {
         });
         message = `Student ${body.full_name} updated successfully!`;
       } else if (action === 'delete') {
-        this.studentsService.deleteStudent(parseInt(body.student_id));
+        await this.studentsService.deleteStudent(parseInt(body.student_id));
         message = 'Student deleted successfully!';
       }
     } catch (error) {
@@ -92,14 +101,14 @@ export class StudentsController {
     }
 
     // Redirect back to students page with message
-    const students = this.studentsService.searchStudents('');
-    const stats = this.studentsService.getStatistics();
+    const students = await this.studentsService.searchStudents('');
+    const stats = await this.studentsService.getStatistics();
     
     // Read base template
-    let baseTemplate = readFileSync(join(__dirname, '..', '..', 'templates', 'base.html'), 'utf8');
+    let baseTemplate = readFileSync(join(process.cwd(), 'templates', 'base.html'), 'utf8');
     
     // Read students content
-    let studentsTemplate = readFileSync(join(__dirname, '..', '..', 'templates', 'students.html'), 'utf8');
+    let studentsTemplate = readFileSync(join(process.cwd(), 'templates', 'students.html'), 'utf8');
     
     // Extract content
     const contentMatch = studentsTemplate.match(/{%\s*block\s+content\s*%}([\s\S]*?){%\s*endblock\s*%}/);
