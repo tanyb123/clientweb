@@ -4,6 +4,7 @@ import { AppModule } from '../src/app.module';
 import * as express from 'express';
 import * as session from 'express-session';
 import * as dotenv from 'dotenv';
+import { join } from 'path';
 
 // Load environment variables
 dotenv.config();
@@ -16,11 +17,7 @@ async function createApp(): Promise<express.Express> {
   }
 
   const expressApp = express();
-  const app = await NestFactory.create(
-    AppModule,
-    new ExpressAdapter(expressApp),
-  );
-
+  
   // Session configuration
   expressApp.use(
     session({
@@ -39,14 +36,28 @@ async function createApp(): Promise<express.Express> {
   expressApp.use(express.urlencoded({ extended: true }));
   expressApp.use(express.json());
 
+  const app = await NestFactory.create(
+    AppModule,
+    new ExpressAdapter(expressApp),
+  );
+
+  // Serve static files
+  app.useStaticAssets(join(process.cwd(), 'static'), {
+    prefix: '/static/',
+  });
+
   await app.init();
   cachedApp = expressApp;
 
   return expressApp;
 }
 
-export default async function handler(req: any, res: any) {
-  const app = await createApp();
-  return app(req, res);
+export default async function handler(req: express.Request, res: express.Response) {
+  try {
+    const app = await createApp();
+    return app(req, res);
+  } catch (error) {
+    console.error('Handler error:', error);
+    res.status(500).json({ error: 'Internal server error', message: error.message });
+  }
 }
-

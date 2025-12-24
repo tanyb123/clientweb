@@ -14,7 +14,10 @@ export class DatabaseService implements OnModuleInit {
     const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_DB;
     
     if (!connectionString) {
-      throw new Error('DATABASE_URL or POSTGRES_DB environment variable is required');
+      console.error('⚠️  DATABASE_URL or POSTGRES_DB environment variable is required');
+      console.error('⚠️  Please set DATABASE_URL in Vercel Environment Variables');
+      // Don't throw error, just log warning - app can still start
+      return;
     }
     
     this.pool = new Pool({
