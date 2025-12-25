@@ -41,7 +41,6 @@ Sau khi chạy script, bạn sẽ có:
 
 Thêm vào file `.env`:
 ```
-DATABASE_URL=postgresql://neondb_owner:npg_pkXW39VaGvjB@ep-floral-term-a1bfsm7l-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
 ```
 
 ### 5. Verify Setup
